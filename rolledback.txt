@@ -1,0 +1,2 @@
+select TRANSFER_ID,SERVICE_TYPE ,RECONCILIATION_BY from ecokash.mtx_transaction_header WHERE 
+TRANSFER_ID IN (SELECT * FROM rolledback);

@@ -1,0 +1,13 @@
+SELECT to_char(mti.transfer_date,'MON-YYYY') month,count(mti.TRANSFER_ID )  Volume,
+count(mti.second_party_account_id)Uniq_subs,count( mti.transfer_value / 100)Value
+FROM ecokash.sys_service_types sst, ecokash.mtx_transaction_items mti, ecokash.mtx_transaction_header mth
+WHERE mti.transfer_status = 'TS'
+AND mti.service_type = sst.service_type
+AND mth.transfer_id=mti.transfer_id 
+--AND mti.transfer_id like 'MP%'
+--and sst.service_type='P2P'
+AND mti.party_id = (select user_id from ecokash.users where msisdn = '72287230' and status='Y'
+AND category_code in (select category_code from ecokash.mtx_categories where domain_code = 'DISTWS'))
+AND mti.transfer_date >= to_date('01/03/2022','dd/mm/yyyy') AND mti.transfer_date < to_date('30/10/2022','dd/mm/yyyy')+1
+
+group by to_char(mti.transfer_date,'MON-YYYY');

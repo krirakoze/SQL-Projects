@@ -1,0 +1,19 @@
+SELECT mti.transfer_date,mti.TRANSFER_ID,(DECODE (mti.entry_type,
+'DR', -mti.transfer_value / 100,mti.transfer_value / 100)) amount,
+mti.POST_BALANCE/100 Post_Balance,second_party_account_id customer_number,
+(select u.agent_code from ecokash.users u where u.user_id = SECOND_PARTY) customer_code,
+(select u.user_name||'-'||u.last_name from ecokash.users u where u.user_id = SECOND_PARTY) customer_name,
+(select u.agent_code from ecokash.users u where u.user_id = mti.party_id) transactor_code,
+(select u.msisdn from ecokash.users u where u.user_id = mti.party_id) transactor_number,
+(select u.user_name||'-'||last_name from ecokash.users u where u.user_id = mti.party_id) channel_name
+FROM ecokash.sys_service_types sst,
+ecokash.mtx_transaction_items mti,
+ecokash.mtx_transaction_header mth
+WHERE mti.transfer_status = 'TS'
+AND mti.service_type = sst.service_type
+AND mth.transfer_id=mti.transfer_id 
+AND mti.party_id = (select user_id from ecokash.users where msisdn = '72310357'
+AND category_code in (select category_code from ecokash.mtx_categories where domain_code = 'DISTWS')) 
+AND mti.transfer_date >= to_date('01/07/2022','dd/mm/yyyy') 
+AND mti.transfer_date < to_date('09/12/2022','dd/mm/yyyy') + 1
+order by mti.transfer_date ;

@@ -1,0 +1,9 @@
+select cb.CREATED_ON LINKED_ON, p.MSISDN, (p.USER_NAME || ' ' || p.LAST_NAME) "CUST NAME",bk.BANK_NAME
+from ecokash.MBK_CUST_ACCOUNTS cb, ecokash.MBK_BANK_DETAILS bk, ecokash.MTX_PARTY p
+where cb.BANK_ID = bk.BANK_ID
+and cb.USER_ID = p.USER_ID
+and cb.STATUS_ID = 'Y'
+and p.STATUS = 'Y'
+and bk.BANK_ID = 'IND0410207' -- this is Kazoza Bank
+and cb.CREATED_ON < to_date('29/04/2021','dd/mm/yyyy')+1
+order by 1;

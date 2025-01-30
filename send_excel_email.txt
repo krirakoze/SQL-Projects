@@ -1,0 +1,185 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Net.Mail;
+using System.Threading.Tasks;
+using Microsoft.Office.Interop.Excel;
+using MySql.Data.MySqlClient;
+using System.Data;
+using System.Threading;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Configuration;
+using Microsoft.Exchange.WebServices.Data;
+
+namespace send_excel_email
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+
+            OpenFile();
+            testAppel();
+          
+           
+       }
+
+        public static void OpenFile()
+        {
+
+            //open excel application
+            Microsoft.Office.Interop.Excel.Application xlApp = new Microsoft.Office.Interop.Excel.Application();
+            //open excel file
+            Microsoft.Office.Interop.Excel.Workbook xlWorkBook;
+            //open excel sheet
+            Microsoft.Office.Interop.Excel.Worksheet xlWorkSheet;
+            object misValue = System.Reflection.Missing.Value;
+
+            xlWorkBook = xlApp.Workbooks.Add(misValue);
+            xlWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
+            xlWorkSheet.Name = "General";
+
+            //merge cells
+            xlWorkSheet.Range[xlWorkSheet.Cells[1, 1], xlWorkSheet.Cells[1, 3]].Merge();
+
+            // the header with style
+            xlWorkSheet.Cells[1, 1] = "users:" + DateTime.Now;
+            xlWorkSheet.Cells[1, 1].Font.Size = 13;
+            xlWorkSheet.Cells[1, 1].Font.Bold = true;
+            xlWorkSheet.Cells[1, 1].Interior.Color = XlRgbColor.rgbSkyBlue;
+
+            // fill inthe header cell and the style
+            int line = 2;
+            xlWorkSheet.Cells[line, 1] = "id";
+            xlWorkSheet.Cells[line, 1].Font.Bold = true;
+            xlWorkSheet.Cells[line, 2] = "name";
+            xlWorkSheet.Cells[line, 2].Font.Bold = true;
+            xlWorkSheet.Cells[line, 3] = "surname";
+            xlWorkSheet.Cells[line, 3].Font.Bold = true;
+
+
+
+
+            //PARTIE CONNECTION A LA BASE DE DONNEE//
+
+            Console.WriteLine("App is starting......" + DateTime.Now);
+            Thread.Sleep(2000);
+
+            var connectionString = string.Format(
+                "server={0};uid={1};pwd={2};database={3}",
+                "localhost",
+                "root",
+                "",
+                "mydb"
+                );
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                Console.WriteLine("Connection process in progress......");
+                Thread.Sleep(2000);
+
+                conn.Open();
+
+                Console.WriteLine("Fetching in DB......");
+                Thread.Sleep(2000);
+                int countline = 3;
+
+                using (var cmd = new MySqlCommand("SELECT * FROM chris ", conn))
+                {
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+
+                            // recover data from db
+
+                            string vid = reader.GetString(0); string vname = reader.GetString(1); string vsurname = reader.GetString(2);
+
+
+                            // PART INSERT INTO CELLS DATA FROM DB
+                            try
+                            {
+
+                                xlWorkSheet.Cells[countline, 1] = vid;
+                                xlWorkSheet.Cells[countline, 2] = vname;
+                                xlWorkSheet.Cells[countline, 3] = vsurname;
+                                countline = countline + 1;
+
+                                Console.WriteLine("Done!");
+                            }
+                            catch (Exception comex)
+                            {
+                                Console.WriteLine(comex.Message);
+
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            // VERIFIE WEITHER FILE EXISTS
+
+            if (File.Exists(@"C:\Users\christa.irakoze\Documents\Nouveau dossier\christa" + DateTime.Now.ToString("yyyy_MM_dd") + ".xlsx"))
+            {
+                //IF YES ,DESTROY IT
+
+                File.Delete(@"C:\Users\christa.irakoze\Documents\Nouveau dossier\christa" + DateTime.Now.ToString("yyyy_MM_dd") + ".xlsx");
+
+            }
+            //CELLS BORDERS
+
+            Microsoft.Office.Interop.Excel.Range tiRange = xlWorkSheet.UsedRange;
+            tiRange.Borders.LineStyle = Microsoft.Office.Interop.Excel.XlLineStyle.xlContinuous;
+            tiRange.Borders.Weight = Microsoft.Office.Interop.Excel.XlBorderWeight.xlThin;
+
+            // SAVE  EXCEL FILE, CLOSE IT, QUIT EXCEL APP
+            xlWorkBook.SaveAs(@"C:\Users\christa.irakoze\Documents\Nouveau dossier\christa" + DateTime.Now.ToString("yyyy_MM_dd") + ".xlsx", Microsoft.Office.Interop.Excel.XlFileFormat.xlOpenXMLWorkbook
+, misValue, misValue, misValue, misValue, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue);
+            xlWorkBook.Close(true, misValue, misValue);
+            xlApp.Quit();
+
+            // QUIT THE SPACE
+            Marshal.ReleaseComObject(xlWorkSheet);
+            Marshal.ReleaseComObject(xlWorkBook);
+            Marshal.ReleaseComObject(xlApp);
+
+        }
+
+
+        private static void testAppel()
+        {
+
+            try
+            {
+                ExchangeService service = new ExchangeService();
+                service.Credentials = new WebCredentials("reportservice@econet.bi", "Econet_Leo@123");
+
+                string serviceUrl = "https://outlook.office365.com/ews/exchange.asmx";
+                service.Url = new Uri(serviceUrl);
+
+                EmailMessage email = new EmailMessage(service);
+                email.ToRecipients.Add(new EmailAddress("christa.irakoze@econet.bi"));
+                email.CcRecipients.Add(new EmailAddress("christa.irakoze@econet.bi"));
+                email.Subject = "Report Service";
+                email.Body = "Dear Herve, <br> Bellow is the report service, <br> Regards.";
+
+                email.Attachments.AddFileAttachment(@"C:\Users\christa.irakoze\Documents\Nouveau dossier\christa" + DateTime.Now.ToString("yyyy_MM_dd") + ".xlsx");
+                email.SendAndSaveCopy();
+                Console.WriteLine("mail send");
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            
+        }
+
+       
+       }
+    }
+

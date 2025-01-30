@@ -1,0 +1,26 @@
+SELECT mti.transfer_date trx_date,  mti.transfer_id trx_id,  (select u.agent_code from ecokash.users u where u.user_id = mti.party_id  and u.status = 'Y') user_code, 
+(select u.msisdn from ecokash.users u where u.user_id = mti.party_id and u.status = 'Y') user_number, 
+ (select u.user_name||' - '||u.last_name from ecokash.users u where u.user_id = mti.party_id) user_name, (DECODE (mti.entry_type,
+                      'DR', -mti.transfer_value/100,
+                      mti.transfer_value/100
+                     )
+             ) trx_amount ,mti.post_balance/100 balance, sst.service_name, decode(mti.first_pty_payment_method_desc, 12, 'Main Account', 'Commission Account') trx_account
+    FROM ecokash.sys_service_types sst, ecokash.mtx_transaction_items mti, ecokash.mtx_transaction_header mth
+   WHERE mti.transfer_status = 'TS'
+   --AND mth.transfer_status = 'TS'
+     AND mti.service_type = sst.service_type
+   --AND sst.SERVICE_TYPE = 'O2C'
+   AND mti.account_id in (select a.msisdn 
+from ecokash.users a, ecokash.mtx_categories cat, ecokash.mtx_wallet w 
+where cat.domain_code = 'DISTWS'
+and a.msisdn = w.msisdn 
+and cat.category_code = a.category_code 
+and w.user_grade in ('REMAGENT0','REMAGENT1','REMAGENT','REMAGENT2') 
+and a.msisdn not in('79098909') 
+and w.payment_type_id = 12)
+     AND mti.transfer_date >= to_date('09/08/2021','dd/mm/yyyy') and mti.transfer_date < to_date('11/08/2021','dd/mm/yyyy')+1
+     AND mti.transfer_id = mth.transfer_id
+     AND mti.payment_type_id in (12,11,13)
+     --AND mti.account_type<>'BANK'
+     AND mti.party_id in (select user_id from ecokash.users where category_code in (select category_code from ecokash.mtx_categories where domain_code = 'DISTWS'))
+order by 1;

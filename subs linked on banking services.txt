@@ -1,0 +1,14 @@
+select distinct(m.msisdn) associated,to_date(mb.created_on,'dd/mm/yyyy') created_on,m.USER_NAME,m.LAST_NAME, mbd.bank_name bank_name
+from ecokash.mtx_party m, ecokash.mbk_cust_accounts mb, ecokash.mtx_party_access mpa, ecokash.mbk_bank_details mbd
+where m.user_id = mb.CUST_ID
+and mpa.USER_ID = m.user_id
+and mbd.bank_id = mb.bank_id
+--and mbd.bank_name='FSTESUBS'
+--and (mpa.mobile_banking = 'Y' or mpa.mobile_money = 'Y')
+and m.status = 'Y'
+and mb.status_id = 'Y'
+and mb.created_on>=to_date('17/07/2020','dd/mm/yyyy')
+--and mb.created_on<to_date('01/01/2020','dd/mm/yyyy')
+--and mb.created_on<to_date('16/10/2019','dd/mm/yyyy')
+--group by to_date(mb.created_on,'dd/mm/yyyy'), mbd.bank_name
+order by to_date(mb.created_on,'dd/mm/yyyy'),mbd.bank_name;

@@ -1,0 +1,25 @@
+SELECT mti.TRANSFER_ID "Transfer Id", mti.transfer_date "Transfer On",/*sst.service_type "Service Type",*/sst.service_name "Service Name",
+    mti.transaction_type "Transaction Type",mti.entry_type "CR/DR",
+    (DECODE(mti.second_party_account_id,
+                        'IND03',
+                        'Fee Income Account',
+                        mti.second_party_account_id
+                        )
+            ) "Mobile Number",
+                (DECODE (mti.entry_type,
+                        'DR', -mti.transfer_value / 100,
+                        mti.transfer_value / 100
+                       )
+               ) "Transaction Value",mti.PREVIOUS_BALANCE/100 "Opening Balance",
+    mti.post_balance/100 "Closed Balance",
+    (select u.msisdn from ecokash.users u where u.user_id = mti.party_id) "Transactor",(select u.USER_NAME || ' ' || u.LAST_NAME from ecokash.users u where u.user_id = mti.party_id) "Name"
+FROM ecokash.sys_service_types sst, ecokash.mtx_transaction_items mti, ecokash.mtx_transaction_header mth
+WHERE mti.transfer_status = 'TS'
+AND mti.service_type = sst.service_type
+AND mth.transfer_id=mti.transfer_id 
+--AND mti.transfer_id like 'MP%'
+--and sst.service_type='P2P'
+AND mti.party_id = (select user_id from ecokash.users where msisdn = '76148270' and status='Y'
+AND category_code in (select category_code from ecokash.mtx_categories where domain_code = 'DISTWS'))
+AND mti.transfer_date >= to_date('01/09/2020','dd/mm/yyyy') AND mti.transfer_date < to_date('14/09/2020','dd/mm/yyyy')+1
+ORDER BY mti.transfer_date;
